@@ -1,11 +1,13 @@
 import os
 import json
+import csv
 import re
 from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QTableWidget, QTableWidgetItem,
-    QPushButton, QLineEdit, QLabel, QMessageBox, QDialog, QFormLayout
+    QPushButton, QLineEdit, QLabel, QMessageBox, QDialog, QFormLayout, QFileDialog, QHeaderView, QTextEdit
 )
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QMimeData
+from PyQt5.QtGui import QClipboard
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
 CLIENTI_PATH = os.path.join(DATA_DIR, "clienti.json")
@@ -35,6 +37,7 @@ class ClienteDialog(QDialog):
         super().__init__(parent)
         self.setWindowTitle("Dati Cliente")
         layout = QFormLayout()
+
         self.nome = QLineEdit(cliente["nome"] if cliente else "")
         self.cognome = QLineEdit(cliente["cognome"] if cliente else "")
         self.telefono = QLineEdit(cliente["telefono"] if cliente else "")
@@ -42,6 +45,8 @@ class ClienteDialog(QDialog):
         self.indirizzo = QLineEdit(cliente["indirizzo"] if cliente else "")
         self.codice_fiscale = QLineEdit(cliente["codice_fiscale"] if cliente and "codice_fiscale" in cliente else "")
         self.partita_iva = QLineEdit(cliente["partita_iva"] if cliente and "partita_iva" in cliente else "")
+        self.note = QTextEdit(cliente["note"] if cliente and "note" in cliente else "")
+
         layout.addRow("Nome:", self.nome)
         layout.addRow("Cognome:", self.cognome)
         layout.addRow("Telefono:", self.telefono)
@@ -49,8 +54,9 @@ class ClienteDialog(QDialog):
         layout.addRow("Indirizzo:", self.indirizzo)
         layout.addRow("Codice Fiscale:", self.codice_fiscale)
         layout.addRow("Partita IVA:", self.partita_iva)
+        layout.addRow("Note:", self.note)
         self.setLayout(layout)
-        self.setMinimumWidth(350)
+        self.setMinimumWidth(400)
         self.result = None
         btn_box = QHBoxLayout()
         salva_btn = QPushButton("Salva")
@@ -90,18 +96,22 @@ class ClienteDialog(QDialog):
             "email": self.email.text().strip(),
             "indirizzo": self.indirizzo.text().strip(),
             "codice_fiscale": self.codice_fiscale.text().strip().upper(),
-            "partita_iva": self.partita_iva.text().strip()
+            "partita_iva": self.partita_iva.text().strip(),
+            "note": self.note.toPlainText().strip()
         }
 
 class ClientiWindow(QWidget):
     COLS = [
-        "Nome", "Cognome", "Telefono", "Email", "Indirizzo", "Codice Fiscale", "Partita IVA"
+        "Nome", "Cognome", "Telefono", "Email", "Indirizzo", "Codice Fiscale", "Partita IVA", "Note"
+    ]
+    KEYS = [
+        "nome", "cognome", "telefono", "email", "indirizzo", "codice_fiscale", "partita_iva", "note"
     ]
 
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Gestione Clienti")
-        self.resize(950, 500)
+        self.resize(1100, 520)
         ensure_data_dir()
         self.clienti = self.load_clienti()
         self.filtrati = self.clienti.copy()
@@ -111,7 +121,7 @@ class ClientiWindow(QWidget):
         # Barra di ricerca
         search_layout = QHBoxLayout()
         self.search_box = QLineEdit()
-        self.search_box.setPlaceholderText("Cerca (nome, cognome, email, CF, P.IVA)...")
+        self.search_box.setPlaceholderText("Cerca (nome, cognome, email, CF, P.IVA, note)...")
         self.search_box.textChanged.connect(self.filter_clienti)
         search_layout.addWidget(QLabel("Ricerca:"))
         search_layout.addWidget(self.search_box)
@@ -123,6 +133,8 @@ class ClientiWindow(QWidget):
         self.table.setSelectionBehavior(self.table.SelectRows)
         self.table.setEditTriggers(self.table.NoEditTriggers)
         self.table.setSortingEnabled(True)
+        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.table.verticalHeader().setVisible(False)
         main_layout.addWidget(self.table)
 
         # Pulsanti
@@ -131,16 +143,22 @@ class ClientiWindow(QWidget):
         self.btn_modifica = QPushButton("Modifica")
         self.btn_elimina = QPushButton("Elimina")
         self.btn_salva = QPushButton("Salva su file")
+        self.btn_export = QPushButton("Esporta CSV")
+        self.btn_copia = QPushButton("Copia dati cliente")
         btn_layout.addWidget(self.btn_nuovo)
         btn_layout.addWidget(self.btn_modifica)
         btn_layout.addWidget(self.btn_elimina)
         btn_layout.addWidget(self.btn_salva)
+        btn_layout.addWidget(self.btn_export)
+        btn_layout.addWidget(self.btn_copia)
         main_layout.addLayout(btn_layout)
 
         self.btn_nuovo.clicked.connect(self.nuovo_cliente)
         self.btn_modifica.clicked.connect(self.modifica_cliente)
         self.btn_elimina.clicked.connect(self.elimina_cliente)
         self.btn_salva.clicked.connect(self.salva_clienti)
+        self.btn_export.clicked.connect(self.esporta_csv)
+        self.btn_copia.clicked.connect(self.copia_dati_cliente)
 
         self.aggiorna_tabella()
 
@@ -165,13 +183,9 @@ class ClientiWindow(QWidget):
     def filter_clienti(self, filtro):
         filtro = filtro.lower().strip()
         if filtro:
-            self.filtrati = [c for c in self.clienti if
-                filtro in c.get("nome", "").lower() or
-                filtro in c.get("cognome", "").lower() or
-                filtro in c.get("email", "").lower() or
-                filtro in c.get("codice_fiscale", "").lower() or
-                filtro in c.get("partita_iva", "").lower()
-            ]
+            self.filtrati = [c for c in self.clienti if any(
+                filtro in (str(c.get(k, "")).lower()) for k in self.KEYS
+            )]
         else:
             self.filtrati = self.clienti.copy()
         self._aggiorna_tabella_filtrata()
@@ -179,16 +193,16 @@ class ClientiWindow(QWidget):
     def _aggiorna_tabella_filtrata(self):
         self.table.setRowCount(len(self.filtrati))
         for row, cliente in enumerate(self.filtrati):
-            for col, key in enumerate([
-                "nome", "cognome", "telefono", "email", "indirizzo", "codice_fiscale", "partita_iva"
-            ]):
-                self.table.setItem(row, col, QTableWidgetItem(cliente.get(key, "")))
+            for col, key in enumerate(self.KEYS):
+                value = cliente.get(key, "")
+                if key == "note":
+                    value = value.replace("\n", " | ")
+                self.table.setItem(row, col, QTableWidgetItem(value))
 
     def get_selected_cliente_global_index(self):
         row = self.table.currentRow()
         if row < 0 or row >= len(self.filtrati):
             return None
-        # Ricava l'indice del cliente selezionato nella lista globale
         cliente_selezionato = self.filtrati[row]
         for idx, c in enumerate(self.clienti):
             if c == cliente_selezionato:
@@ -221,3 +235,30 @@ class ClientiWindow(QWidget):
         if reply == QMessageBox.Yes:
             del self.clienti[idx]
             self.aggiorna_tabella()
+
+    def esporta_csv(self):
+        path, _ = QFileDialog.getSaveFileName(self, "Esporta elenco clienti CSV", "", "CSV files (*.csv)")
+        if not path:
+            return
+        try:
+            with open(path, "w", newline='', encoding="utf-8") as f:
+                writer = csv.DictWriter(f, fieldnames=self.KEYS)
+                writer.writeheader()
+                for c in self.filtrati:
+                    writer.writerow({k: c.get(k, "") for k in self.KEYS})
+            QMessageBox.information(self, "Esporta", f"Esportazione completata:\n{path}")
+        except Exception as e:
+            QMessageBox.warning(self, "Errore", f"Errore durante l'esportazione: {e}")
+
+    def copia_dati_cliente(self):
+        idx = self.get_selected_cliente_global_index()
+        if idx is None:
+            QMessageBox.warning(self, "Attenzione", "Seleziona un cliente da copiare.")
+            return
+        cliente = self.clienti[idx]
+        text = "\n".join(
+            f"{col}: {cliente.get(key, '')}" for col, key in zip(self.COLS, self.KEYS)
+        )
+        clipboard = QApplication.instance().clipboard()
+        clipboard.setText(text)
+        QMessageBox.information(self, "Copia", "Dati cliente copiati negli appunti.")
