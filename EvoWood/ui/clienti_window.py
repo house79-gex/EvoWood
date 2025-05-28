@@ -65,7 +65,6 @@ class ClienteDialog(QDialog):
         dati_layout = QFormLayout()
         self.tipo_cliente = QComboBox()
         self.tipo_cliente.addItems(["Persona fisica", "Azienda/Ditta"])
-        # Preseleziona tipo cliente da dati
         if cliente and cliente.get("tipo_cliente") == "azienda":
             self.tipo_cliente.setCurrentIndex(1)
 
@@ -178,10 +177,8 @@ class ClienteDialog(QDialog):
 
     def aggiorna_campi_visibili(self):
         tipo = self.tipo_cliente.currentIndex()
-        # Persona fisica: mostra nome, cognome, nascondi ragione sociale
         self.nome.parentWidget().setVisible(tipo == 0)
         self.cognome.parentWidget().setVisible(tipo == 0)
-        # Azienda: mostra ragione sociale, referente
         self.ragione_sociale.parentWidget().setVisible(tipo == 1)
         self.referente_nome.parentWidget().setVisible(tipo == 1)
         self.referente_cognome.parentWidget().setVisible(tipo == 1)
@@ -189,7 +186,6 @@ class ClienteDialog(QDialog):
     def on_accept(self):
         errors = []
         tipo = self.tipo_cliente.currentIndex()
-        # Persona fisica
         if tipo == 0:
             if not self.nome.text().strip():
                 errors.append("Il nome è obbligatorio.")
@@ -198,7 +194,6 @@ class ClienteDialog(QDialog):
         else:
             if not self.ragione_sociale.text().strip():
                 errors.append("La ragione sociale è obbligatoria.")
-        # Validazione opzionale
         if self.email.text().strip() and not valida_email(self.email.text().strip()):
             errors.append("Email non valida.")
         if self.telefono.text().strip() and not valida_telefono(self.telefono.text().strip()):
@@ -233,15 +228,12 @@ class ClienteDialog(QDialog):
             "storico": [],
             "allegati": []
         }
-        # Offerte
         base["offerte"] = []
         for i in range(self.offerte_list.count()):
             base["offerte"].append(self.offerte_list.item(i).data(Qt.UserRole))
-        # Storico
         base["storico"] = []
         for i in range(self.storico_list.count()):
             base["storico"].append(self.storico_list.item(i).data(Qt.UserRole))
-        # Allegati
         base["allegati"] = []
         for i in range(self.allegati_list.count()):
             base["allegati"].append(self.allegati_list.item(i).data(Qt.UserRole))
@@ -270,7 +262,6 @@ class ClienteDialog(QDialog):
         item = QListWidgetItem(f"{off['data']} | {off['descrizione']} | {off['importo']} € | {off['stato']}")
         item.setData(Qt.UserRole, off)
         self.offerte_list.addItem(item)
-        # Log in storico
         ev = {
             "data": now_str(),
             "tipo": "offerta",
@@ -308,7 +299,6 @@ class ClienteDialog(QDialog):
         item.setData(Qt.UserRole, new_off)
         self.offerte_list.takeItem(row)
         self.offerte_list.insertItem(row, item)
-        # Log in storico
         ev = {
             "data": now_str(),
             "tipo": "offerta",
@@ -325,7 +315,6 @@ class ClienteDialog(QDialog):
         off = self.offerte_list.item(row).data(Qt.UserRole)
         descr = off["descrizione"]
         self.offerte_list.takeItem(row)
-        # Log in storico
         ev = {
             "data": now_str(),
             "tipo": "offerta",
