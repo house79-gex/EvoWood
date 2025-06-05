@@ -13,6 +13,7 @@
 
 ## Struttura file
 - `models.py` — Modelli dati estesi (Materiale, Modulo, Vano, Anta, Cassetto, Accessorio, Armadio)
+- `cataloghi.py` — Esempio cataloghi materiali/accessori
 - `ui_armadio.py` — Interfaccia grafica avanzata PyQt5
 - `README.md` — Questa documentazione
 
