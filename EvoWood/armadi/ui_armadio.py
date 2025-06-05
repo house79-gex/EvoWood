@@ -1,21 +1,10 @@
 import sys
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QTabWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QTextEdit, QComboBox,
-    QPushButton, QListWidget, QListWidgetItem, QMessageBox, QSpinBox, QFormLayout, QDialog, QDialogButtonBox
+    QPushButton, QListWidget, QFormLayout, QDialog, QDialogButtonBox, QSpinBox
 )
 from .models import Armadio, Modulo, Vano, Anta, Materiale, Cassetto, Accessorio
-
-# Catalogo fittizio materiali e accessori (demo)
-MATERIALI = [
-    Materiale("Melaminico Bianco", "Pannello nobilitato bianco"),
-    Materiale("Rovere Naturale", "Imitazione legno rovere"),
-    Materiale("Vetro Satinato", "Vetro per ante scorrevoli"),
-]
-ACCESSORI = [
-    Accessorio("Maniglia Inox", "maniglia"),
-    Accessorio("Appendiabiti Estraibile", "ferramenta"),
-    Accessorio("Luce LED interna", "elettrico"),
-]
+from .cataloghi import MATERIALI, ACCESSORI
 
 class ModuloDialog(QDialog):
     def __init__(self, parent=None):
@@ -35,7 +24,6 @@ class ModuloDialog(QDialog):
         self.materiale = QComboBox()
         for m in MATERIALI:
             self.materiale.addItem(m.nome)
-        # Vani, ante, cassetti
         self.n_vani = QSpinBox(); self.n_vani.setRange(1, 5); self.n_vani.setValue(1)
         self.n_ante = QSpinBox(); self.n_ante.setRange(0, 4); self.n_ante.setValue(1)
         self.n_cassetti = QSpinBox(); self.n_cassetti.setRange(0, 5); self.n_cassetti.setValue(0)
