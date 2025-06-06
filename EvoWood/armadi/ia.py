@@ -1,11 +1,10 @@
-# Stub per integrazione Intelligenza Artificiale
-
-def suggerisci_configurazione_armadio(descrizione_testuale):
+# ...già presente...
+def genera_armadio_da_descrizione(descrizione):
     """
-    Placeholder: in futuro chiamerà un modello IA che, dato un testo, genera una configurazione armadio.
+    Placeholder: in futuro chiama un modello IA per generare tutta la configurazione da testo.
     """
     return {
-        "nome": "Suggerito dalla IA",
+        "nome": f"Auto-{descrizione[:10]}",
         "componenti": [],
-        "note": "Questa configurazione è stata generata automaticamente."
+        "note": "Creato automaticamente da descrizione con IA."
     }
