@@ -6,17 +6,11 @@ from PyQt5.QtWidgets import (
     QInputDialog, QFileDialog, QMessageBox, QComboBox, QFrame, QListView
 )
 from PyQt5.QtCore import Qt, QRectF, QPointF, QSize
-from PyQt5.QtGui import QColor, QBrush, QPainter, QPen, QIcon, QPixmap
+from PyQt5.QtGui import QColor, QBrush, QPen, QIcon, QPixmap
 
 from .models import Armadio, Componente, Materiale, FormaPersonalizzata
 from .crud import ArmadioCRUD
 from .ia import suggerisci_configurazione_armadio
-
-try:
-    import pyqtgraph.opengl as gl
-    HAVE_GL = True
-except ImportError:
-    HAVE_GL = False
 
 COMPONENTI_COLORI = {
     "Fianco": "#F6B26B",
@@ -181,7 +175,7 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Progetta Armadio - EvoWood")
         pal = palette_calda()
         self.setStyleSheet(f"background: {pal['bg']}; color: {pal['text']}; font-family: Segoe UI; font-size: 12pt;")
-        self.resize(1280, 700)
+        self.resize(1100, 700)
         central = QWidget()
         layout = QHBoxLayout(central)
 
@@ -205,21 +199,14 @@ class MainWindow(QMainWindow):
         palette_panel.addWidget(self.palette)
         layout.addLayout(palette_panel)
 
-        # Area lavoro + 3D
+        # Area lavoro 2D
         self.scene = ArmadioScene(self.armadio, grid_size=10)
         self.view = ArmadioView(self.scene)
         self.view.setFixedSize(600, 600)
         area_layout = QVBoxLayout()
         area_layout.addWidget(QLabel("Area di lavoro 2D", alignment=Qt.AlignCenter))
         area_layout.addWidget(self.view)
-        if HAVE_GL:
-            area_layout.addWidget(QLabel("Anteprima 3D", alignment=Qt.AlignCenter))
-            self.glview = gl.GLViewWidget()
-            self.glview.setFixedSize(350, 350)
-            area_layout.addWidget(self.glview)
-            self.aggiorna_3d()
-        else:
-            area_layout.addWidget(QLabel("Modulo 3D non disponibile", alignment=Qt.AlignCenter))
+        area_layout.addWidget(QLabel("Modulo 3D non disponibile", alignment=Qt.AlignCenter))
         layout.addLayout(area_layout)
 
         # Pannello proprietà e azioni
@@ -298,7 +285,6 @@ class MainWindow(QMainWindow):
                 item.componente.dimensioni["larghezza"] = larghezza
                 item.componente.dimensioni["altezza"] = altezza
                 item.aggiorna_dimensioni()
-        self.aggiorna_3d()
 
     def salva_armadio(self):
         # Aggiorna tutte le posizioni dei componenti prima di salvare
@@ -338,7 +324,6 @@ class MainWindow(QMainWindow):
         self.scene.sync_grafica()
         self.lista_armadi.refresh()
         self.lista_armadi.setCurrentRow(self.lista_armadi.count()-1)
-        self.aggiorna_3d()
 
     def elimina_armadio(self):
         index = self.lista_armadi.currentRow()
@@ -356,12 +341,10 @@ class MainWindow(QMainWindow):
         self.armadio = self.crud.armadi[idx]
         self.scene.armadio = self.armadio
         self.scene.sync_grafica()
-        self.aggiorna_3d()
 
     def cambia_forma(self, idx):
         nome, param = FORME_PRESET[idx]
         self.armadio.forma = FormaPersonalizzata(nome.lower().replace(" ", "_"), param)
-        self.aggiorna_3d()
 
     def suggerimento_ia(self):
         desc, ok = QInputDialog.getText(self, "Suggerimento IA", "Descrivi l'armadio desiderato:")
@@ -375,30 +358,7 @@ class MainWindow(QMainWindow):
         self.scene.sync_grafica()
         self.lista_armadi.refresh()
         self.lista_armadi.setCurrentRow(self.lista_armadi.count()-1)
-        self.aggiorna_3d()
         QMessageBox.information(self, "Suggerimento IA", "Armadio generato dalla descrizione!")
-
-    def aggiorna_3d(self):
-        if not HAVE_GL or not hasattr(self, "glview"):
-            return
-        self.glview.clear()
-        # Demo 3D: visualizza parallelepipedi per ogni componente (proporzionalmente)
-        for comp in self.armadio.componenti:
-            try:
-                import numpy as np
-                l = comp.dimensioni.get("larghezza", 40) / 10
-                p = comp.dimensioni.get("spessore", 2) or 2
-                h = comp.dimensioni.get("altezza", 100) / 10
-                x = comp.posizione.get("x", 0) / 10
-                y = comp.posizione.get("y", 0) / 10
-                z = 0
-                color = QColor(COMPONENTI_COLORI.get(comp.tipo, "#FFF"))
-                mesh = gl.GLBoxItem(size=QSize(l, p, h))
-                mesh.translate(x, y, z)
-                mesh.setColor([color.red()/255, color.green()/255, color.blue()/255, 0.9])
-                self.glview.addItem(mesh)
-            except Exception:
-                pass
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
