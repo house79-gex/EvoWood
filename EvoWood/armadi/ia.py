@@ -1,8 +1,8 @@
-# Qui andrà l’integrazione futura con IA: suggerimenti, generazione automatica, ottimizzazione, ecc.
+# Stub per integrazione Intelligenza Artificiale
 
 def suggerisci_configurazione_armadio(descrizione_testuale):
     """
-    Placeholder: In futuro chiamerà un modello IA che, dato un testo, genera una configurazione armadio.
+    Placeholder: in futuro chiamerà un modello IA che, dato un testo, genera una configurazione armadio.
     """
     return {
         "nome": "Suggerito dalla IA",
