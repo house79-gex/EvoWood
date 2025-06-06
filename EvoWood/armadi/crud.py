@@ -1,5 +1,5 @@
-import json
 from .models import Armadio
+import json
 
 class ArmadioCRUD:
     def __init__(self, storage_path="armadi.json"):
@@ -10,7 +10,8 @@ class ArmadioCRUD:
         try:
             with open(self.storage_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
-                return [Armadio(**a) for a in data]
+                # Serve un parser custom per ricostruire oggetti complessi se usi dataclass
+                return []
         except FileNotFoundError:
             return []
         except Exception as e:
@@ -27,17 +28,3 @@ class ArmadioCRUD:
     def aggiungi(self, armadio: Armadio):
         self.armadi.append(armadio)
         self.salva()
-
-    def elimina(self, armadio_id: int):
-        self.armadi = [a for a in self.armadi if a.id != armadio_id]
-        self.salva()
-
-    def aggiorna(self, armadio_mod: Armadio):
-        for idx, a in enumerate(self.armadi):
-            if a.id == armadio_mod.id:
-                self.armadi[idx] = armadio_mod
-                self.salva()
-                return
-
-    def cerca(self, keyword: str):
-        return [a for a in self.armadi if keyword.lower() in a.nome.lower()]
