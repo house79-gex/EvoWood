@@ -1,15 +1,9 @@
-from .models import Materiale, Accessorio
+# Qui puoi gestire i cataloghi di materiali/modelli/fornitori
 
-# Catalogo materiali di esempio
-MATERIALI = [
-    Materiale("Melaminico Bianco", "Pannello nobilitato bianco"),
-    Materiale("Rovere Naturale", "Imitazione legno rovere"),
-    Materiale("Vetro Satinato", "Vetro per ante scorrevoli"),
+CATALOGHI = [
+    {"nome": "Basic", "descrizione": "Linea base"},
+    {"nome": "Premium", "descrizione": "Linea premium"},
 ]
 
-# Catalogo accessori di esempio
-ACCESSORI = [
-    Accessorio("Maniglia Inox", "maniglia"),
-    Accessorio("Appendiabiti Estraibile", "ferramenta"),
-    Accessorio("Luce LED interna", "elettrico"),
-]
+def get_cataloghi():
+    return CATALOGHI
